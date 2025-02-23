@@ -46,7 +46,10 @@ THIRD_APPS = [
     # 'rest_framework_simplejwt',
     # 'rest_framework_simplejwt.token_blacklist',
     # 'simple_history',
-    # 'drf_yasg',
+    'drf_spectacular',
+    'django_filters',
+    'django_celery_results',
+    'django_celery_beat',
 ]
 
 
@@ -146,16 +149,29 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 } 
 
 
-
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SleakOps RDS Pricing API',
+    'DESCRIPTION': 'Documentación técnica para el backend de SleakOps',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+        'defaultModelsExpandDepth': -1,
+    },
+}
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("django_redis", 6379)],
+            "hosts": [env("REDIS_URL")],
         },
     },
 }
@@ -163,7 +179,7 @@ CHANNEL_LAYERS = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://django_redis:6379",
+        "LOCATION": env("REDIS_URL"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -174,3 +190,32 @@ CHANNEL_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "America/Buenos_Aires"
+
+CELERY_BROKER_URL = env("REDIS_URL")
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': 3600,
+    'socket_timeout': 5,
+    'retry_on_timeout': True
+}
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'default'
+
+CELERY_IMPORTS = (
+    'core.tasks',
+    'apps.sync.tasks',
+)
+
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+CELERY_BEAT_SCHEDULE = {
+    'update-rds-pricing': {
+        'task': 'apps.sync.tasks.update_rds_pricing_data_task',
+        'schedule': 86400.0,  # 24 horas
+    }
+}
