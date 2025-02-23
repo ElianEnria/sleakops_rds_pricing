@@ -1,0 +1,20 @@
+FROM python:3.9
+
+# instal ssh client
+RUN apt-get update && apt-get install -y openssh-client
+
+# set environment variables
+ENV PYTHONUNBUFFERED 1
+
+# set work directory
+WORKDIR /app
+
+# install dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r requirements.txt
+
+# copy project
+COPY . /app
+
+# Start server 
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
