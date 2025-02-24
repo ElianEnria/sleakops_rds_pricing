@@ -13,3 +13,4 @@ django-filter==25.1
 celery==5.4.0
 django-celery-results==2.5.1
 django-celery-beat==2.7.0
+celery-redbeat==2.3.2

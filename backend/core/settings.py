@@ -211,11 +211,13 @@ CELERY_IMPORTS = (
     'apps.sync.tasks',
 )
 
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULER = 'redbeat.RedBeatScheduler'
+CELERY_RESULT_EXPIRES = 86400  # 1 día
 
 CELERY_BEAT_SCHEDULE = {
     'update-rds-pricing': {
         'task': 'apps.sync.tasks.update_rds_pricing_data_task',
-        'schedule': 86400.0,  # 24 horas
+        'schedule': 120.0,  # 86400.0 = 24 horas
     }
 }
