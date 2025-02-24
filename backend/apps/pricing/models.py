@@ -62,9 +62,14 @@ class Price(models.Model):
         blank=True
     )
     effective_date = models.DateTimeField(db_index=True)
+    
+    rate_code = models.CharField(max_length=100, null=True, blank=True)
+    begin_range = models.CharField(max_length=50, null=True, blank=True)
+    end_range = models.CharField(max_length=50, null=True, blank=True)
+    description = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
-        unique_together = ['product', 'term_type', 'lease_contract_length', 'purchase_option', 'effective_date']
+        unique_together = ['product', 'term_type', 'lease_contract_length', 'purchase_option', 'effective_date', 'rate_code']
         index_together = [['product', 'term_type', 'effective_date']]
 
     @property
@@ -83,7 +88,8 @@ class Price(models.Model):
 
     def __str__(self):
         if self.term_type == 'Reserved':
-            return f"{self.product.sku} - {self.term_type} - {self.lease_contract_length} - {self.purchase_option}"
-        return f"{self.product.sku} - {self.term_type}"
+            return f"{self.product.sku} - {self.term_type} - {self.lease_contract_length} - {self.purchase_option} - {self.rate_code}"
+        return f"{self.product.sku} - {self.term_type} - {self.rate_code}"
+
 
     

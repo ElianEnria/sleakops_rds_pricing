@@ -100,9 +100,12 @@ def _process_pricing_data(data, current_skus):
             if sku not in current_skus:
                 continue
 
-            product = Product.objects.get(sku=sku)
+            try:
+                product = Product.objects.get(sku=sku)
+            except Product.DoesNotExist:
+                continue
 
-            # Eliminar precios antiguos del SKU para evitar duplicados
+            # Eliminar precios antiguos del SKU para el tipo de término específico
             Price.objects.filter(product=product, term_type=term_type).delete()
 
             new_prices = []
@@ -116,25 +119,33 @@ def _process_pricing_data(data, current_skus):
                     logger.warning(f"Fecha inválida en término {term}: {str(e)}")
                     continue
 
-                for price_dim in term['priceDimensions'].values():
+                for price_dim in term.get('priceDimensions', {}).values():
                     try:
                         price = Decimal(price_dim['pricePerUnit']['USD'])
                     except (KeyError, InvalidOperation) as e:
                         logger.warning(f"Precio inválido en {sku}: {str(e)}")
                         continue
 
-                    # Definir los datos del precio
+                    rate_code = price_dim.get('rateCode', None)
+                    # Opcional: extraer rangos si son necesarios
+                    begin_range = price_dim.get('beginRange', None)
+                    end_range = price_dim.get('endRange', None)
+                    description = price_dim.get('description', None)
+                    
                     price_data = Price(
                         product=product,
                         term_type=term_type,
                         price_per_hour=price,
                         lease_contract_length=term.get('termAttributes', {}).get('LeaseContractLength', ''),
                         purchase_option=term.get('termAttributes', {}).get('PurchaseOption', ''),
-                        effective_date=effective_date
+                        effective_date=effective_date,
+                        rate_code=rate_code,
+                        begin_range=begin_range,
+                        end_range=end_range,
+                        description=description
                     )
-
                     new_prices.append(price_data)
 
-            # Crear nuevos precios en bulk
+            # Crear nuevos precios en bulk para este SKU y term_type
             if new_prices:
                 Price.objects.bulk_create(new_prices)
